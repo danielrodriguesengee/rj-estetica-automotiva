@@ -671,7 +671,8 @@ document.getElementById('booking-date').addEventListener('change', async () => {
   try {
     const r = await fetch(`${CFG.API_SLOTS}?date=${date}`);
     const j = await r.json();
-    bookedSlots = j.booked || [];
+    // busy = [{ startMins, endMins, startTime, endTime, summary }, ...]
+    bookedSlots = j.busy || [];
   } catch(e) {
     console.warn('slots fetch falhou, prosseguindo sem bloqueios:', e.message);
     bookedSlots = [];
@@ -694,18 +695,25 @@ function generateTimeSlots(date) {
   const minAdv=(data.bookingRules?.minAdvanceHours||2)*3600000;
   const now=Date.now();
   const grid=document.createElement('div'); grid.className='time-grid';
-  let cur=openM,count=0;
+  let cur=openM, count=0;
   while(cur+dur<=closeM){
     const ts=fromMins(cur);
     const slotMs=new Date(date+'T'+ts+':00').getTime();
     const tooSoon=slotMs-now<minAdv;
-    const isBooked=bookedSlots.some(b=>b.time===ts);
+
+    // Colisão: o slot [cur, cur+dur] colide com um evento ocupado [startMins, endMins]
+    // se cur < endMins E cur+dur > startMins
+    const collision = bookedSlots.find(b => cur < b.endMins && (cur + dur) > b.startMins);
+
+    const blocked = tooSoon || !!collision;
     const btn=document.createElement('button');
     btn.type='button';
-    btn.className='t-btn'+(tooSoon||isBooked?' booked':'');
+    btn.className='t-btn'+(blocked?' booked':'');
     btn.textContent=ts;
-    btn.title=isBooked?'Já agendado':tooSoon?'Muito em breve':'';
-    if(!tooSoon&&!isBooked) btn.onclick=()=>selTime(btn,ts);
+    btn.title=collision
+      ? `Ocupado (${collision.startTime}–${collision.endTime})`
+      : tooSoon ? 'Muito em breve' : '';
+    if(!blocked) btn.onclick=()=>selTime(btn,ts);
     grid.appendChild(btn); cur+=interval; count++;
   }
   c.innerHTML='';
