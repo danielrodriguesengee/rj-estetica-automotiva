@@ -14,24 +14,7 @@ function getCalendarClient() {
   const raw = process.env.GOOGLE_CREDENTIALS;
   if (!raw) throw new Error('Variável GOOGLE_CREDENTIALS não encontrada no ambiente.');
 
-  let creds;
-  try {
-    // Netlify às vezes escapa as aspas ou quebra \n da private_key.
-    // Tentamos parsear direto; se falhar, sanitizamos antes.
-    creds = JSON.parse(raw);
-  } catch (e1) {
-    try {
-      // Tenta decodificar escapes duplos (ex: \\n → \n)
-      creds = JSON.parse(raw.replace(/\\\\n/g, '\\n'));
-    } catch (e2) {
-      throw new Error(`GOOGLE_CREDENTIALS inválido: ${e1.message}`);
-    }
-  }
-
-  // Valida campos obrigatórios com mensagem clara
-  if (!creds.client_email) throw new Error('credentials.json não tem client_email — verifique se colou o arquivo correto (tipo "service_account").');
-  if (!creds.private_key)  throw new Error('credentials.json não tem private_key.');
-  if (creds.type !== 'service_account') throw new Error(`Tipo de credencial incorreto: "${creds.type}". Precisa ser "service_account".`);
+  const creds = JSON.parse(raw);
 
   const auth = new google.auth.GoogleAuth({
     credentials: creds,
