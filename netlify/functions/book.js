@@ -1,8 +1,8 @@
 // netlify/functions/book.js
 // POST /api/book
-// Body: { name, vehicle, vtype, phone, date, time, service, extras, total }
 
 const { getCalendarClient, ok, err, CORS_HEADERS } = require('./_gcal');
+const { normalizePhone, waLink } = require('./_phone');
 
 const TZ = 'America/Sao_Paulo';
 
@@ -10,17 +10,13 @@ exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers: CORS_HEADERS, body: '' };
   }
-
   if (event.httpMethod !== 'POST') {
     return err('Método não permitido.', 405);
   }
 
   let body;
-  try {
-    body = JSON.parse(event.body || '{}');
-  } catch {
-    return err('JSON inválido.', 400);
-  }
+  try { body = JSON.parse(event.body || '{}'); }
+  catch { return err('JSON inválido.', 400); }
 
   const { name, vehicle, vtype, phone, date, time, service, extras = [], total } = body;
 
@@ -28,29 +24,32 @@ exports.handler = async (event) => {
     return err('Campos obrigatórios ausentes.', 400);
   }
 
+  // Normaliza o número do cliente
+  const clientPhone    = normalizePhone(phone);
+  const clientWaLink   = waLink(phone, `Olá ${name.split(' ')[0]}! Confirmando seu agendamento de ${service.name} em ${date.split('-').reverse().join('/')} às ${time}. Qualquer dúvida estamos à disposição! 😊`);
+
   try {
     const { calendar, calendarId } = getCalendarClient();
 
     const [y, mo, d]  = date.split('-').map(Number);
     const [hour, min] = time.split(':').map(Number);
 
-    const extraDuration = (extras || []).reduce((acc, ex) => acc + (ex.durationMinutes || 0), 0);
+    const extraDuration = extras.reduce((acc, ex) => acc + (ex.durationMinutes || 0), 0);
     const totalMinutes  = (service.durationMinutes || 60) + extraDuration;
 
     const startDate = new Date(y, mo - 1, d, hour, min);
     const endDate   = new Date(startDate.getTime() + totalMinutes * 60_000);
 
-    const extrasStr = extras.length
-      ? `\n➕ Extras: ${extras.map(e => e.name).join(', ')}`
-      : '';
-
-    const fmtPrice = (n) => Number(n).toFixed(2).replace('.', ',');
+    const fmtPrice  = (n) => Number(n).toFixed(2).replace('.', ',');
+    const extrasStr = extras.length ? `\n➕ Extras: ${extras.map(e => e.name).join(', ')}` : '';
+    const dateStr   = date.split('-').reverse().join('/');
 
     const calEvent = {
       summary    : `${service.name} — ${name}`,
       description: [
         `🚘 Veículo: ${vehicle} (${vtype})`,
-        `📞 WhatsApp: ${phone}`,
+        `📞 WhatsApp: ${clientPhone}`,
+        `💬 Abrir conversa: ${clientWaLink}`,
         `🔧 Serviço: ${service.name}${extrasStr}`,
         `💰 Total: R$ ${fmtPrice(total)}`,
         ``,
@@ -68,31 +67,21 @@ exports.handler = async (event) => {
       },
     };
 
-    const response = await calendar.events.insert({
-      calendarId,
-      resource: calEvent,
-    });
+    const response = await calendar.events.insert({ calendarId, resource: calEvent });
+    const created  = response.data;
 
-    const created = response.data;
-
-    // AWAIT obrigatório em serverless — o processo encerra ao retornar,
-    // chamadas fire-and-forget nunca completam em Netlify Functions.
+    // AWAIT obrigatório em serverless
     try {
-      await notifyWhatsApp({ name, vehicle, vtype, phone, date, time, service, extras, total });
+      await notifyOwner({ name, vehicle, vtype, clientPhone, clientWaLink, date: dateStr, time, service, extras, total, fmtPrice });
       console.log('[CallMeBot] Notificação enviada.');
     } catch (waErr) {
       console.error('[CallMeBot] Falha:', waErr.message);
     }
 
-    return ok({
-      success : true,
-      eventId : created.id,
-      htmlLink: created.htmlLink,
-      message : 'Agendamento criado com sucesso!',
-    });
+    return ok({ success: true, eventId: created.id, htmlLink: created.htmlLink, message: 'Agendamento criado com sucesso!' });
 
   } catch (e) {
-    console.error('[book] Erro:', e.message, e.stack);
+    console.error('[book] Erro:', e.message);
     return err(`Erro ao criar agendamento: ${e.message}`);
   }
 };
@@ -101,42 +90,31 @@ exports.handler = async (event) => {
 
 function toISOLocal(date) {
   const pad = n => String(n).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}` +
-         `T${pad(date.getHours())}:${pad(date.getMinutes())}:00`;
+  return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:00`;
 }
 
-async function notifyWhatsApp(b) {
-  const waPhone = process.env.CALLMEBOT_PHONE;
-  const apikey  = process.env.CALLMEBOT_APIKEY;
+async function notifyOwner({ name, vehicle, vtype, clientPhone, clientWaLink, date, time, service, extras, total, fmtPrice }) {
+  const ownerPhone = process.env.CALLMEBOT_PHONE;
+  const apikey     = process.env.CALLMEBOT_APIKEY;
+  if (!ownerPhone || !apikey) { console.warn('[CallMeBot] Variáveis não definidas.'); return; }
 
-  if (!waPhone || !apikey) {
-    console.warn('[CallMeBot] Variáveis CALLMEBOT_PHONE ou CALLMEBOT_APIKEY não definidas.');
-    return;
-  }
+  const extrasStr = extras.length ? `\n➕ Extras: ${extras.map(e => e.name).join(', ')}` : '';
 
-  const fmtPrice  = (n) => Number(n).toFixed(2).replace('.', ',');
-  const dateStr   = b.date.split('-').reverse().join('/');
-  const extrasStr = b.extras.length
-    ? `\n➕ Extras: ${b.extras.map(e => e.name).join(', ')}`
-    : '';
-
-  const text = 
+  const text =
     `🚗 *NOVO AGENDAMENTO*\n\n` +
-    `👤 Cliente: ${b.name}\n` +
-    `📞 WhatsApp: ${b.phone}\n` +
-    `🚘 Veículo: ${b.vehicle} (${b.vtype})\n` +
-    `🔧 Serviço: ${b.service.name}${extrasStr}\n` +
-    `📅 Data: ${dateStr} às ${b.time}\n` +
-    `💰 Total: R$ ${fmtPrice(b.total)}\n\n` +
+    `👤 Cliente: ${name}\n` +
+    `📞 WhatsApp: ${clientPhone}\n` +
+    `🚘 Veículo: ${vehicle} (${vtype})\n` +
+    `🔧 Serviço: ${service.name}${extrasStr}\n` +
+    `📅 Data: ${date} às ${time}\n` +
+    `💰 Total: R$ ${fmtPrice(total)}\n` +
+    `💬 Falar com cliente: ${clientWaLink}\n\n` +
     `RJ Estética Automotiva`;
 
-  const url = `https://api.callmebot.com/whatsapp.php?phone=${waPhone}&text=${encodeURIComponent(text)}&apikey=${apikey}`;
+  const url = `https://api.callmebot.com/whatsapp.php?phone=${ownerPhone}&text=${encodeURIComponent(text)}&apikey=${apikey}`;
+  console.log('[CallMeBot] Chamando para:', ownerPhone);
 
-  console.log('[CallMeBot] Chamando:', url.replace(apikey, '***'));
-
-  const res = await fetch(url);
-  const body = await res.text();
-  console.log('[CallMeBot] Resposta:', res.status, body.slice(0, 120));
-
-  if (!res.ok) throw new Error(`HTTP ${res.status}: ${body.slice(0, 80)}`);
+  const res  = await fetch(url);
+  const resp = await res.text();
+  console.log('[CallMeBot] Resposta:', res.status, resp.slice(0, 120));
 }
