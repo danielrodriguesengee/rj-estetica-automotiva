@@ -1,0 +1,9 @@
+# Credenciais do Google
+credentials.json
+token.json
+
+# Dependências
+node_modules/
+
+# Variáveis de ambiente locais
+.env

@@ -1,0 +1,14 @@
+{
+  "name": "rj-estetica-automotiva",
+  "version": "1.0.0",
+  "description": "Backend para agendamento via Google Calendar + CallMeBot",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "googleapis": "^144.0.0"
+  },
+  "devDependencies": {
+    "@netlify/functions": "^2.0.0"
+  }
+}
