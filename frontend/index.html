@@ -89,9 +89,21 @@
     .svc-card-grid::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--green),transparent);opacity:0;transition:opacity var(--tr)}
     .svc-card-grid:hover{border-color:var(--border-hover);transform:translateY(-3px)}
     .svc-card-grid:hover::before{opacity:1}
-    .card-img{width:calc(100% + 48px);margin:-24px -24px 20px;height:160px;overflow:hidden;border-radius:var(--radius) var(--radius) 0 0;flex-shrink:0}
-    .card-img img{width:100%;height:100%;object-fit:cover;filter:brightness(.85) saturate(.9);transition:all .5s ease}
-    .svc-card-grid:hover .card-img img{transform:scale(1.04);filter:brightness(1) saturate(1.1)}
+    
+    /* CSS ATUALIZADO PARA SUPORTAR SLIDER NOS CARDS */
+    .card-img{width:calc(100% + 48px);margin:-24px -24px 20px;height:160px;overflow:hidden;border-radius:var(--radius) var(--radius) 0 0;flex-shrink:0;position:relative}
+    .card-img > img{width:100%;height:100%;object-fit:cover;filter:brightness(.85) saturate(.9);transition:all .5s ease}
+    .svc-card-grid:hover .card-img > img{transform:scale(1.04);filter:brightness(1) saturate(1.1)}
+    
+    .card-slider-track { width: 100%; height: 100%; position: relative; }
+    .card-slider-track img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; filter: brightness(.85) saturate(.9); transition: opacity 0.5s ease, transform 0.5s ease; z-index: 1; }
+    .card-slider-track img.active { opacity: 1; z-index: 2; }
+    .svc-card-grid:hover .card-slider-track img.active { transform: scale(1.04); filter: brightness(1) saturate(1.1); }
+    
+    .slider-dots { position: absolute; bottom: 10px; left: 0; right: 0; display: flex; justify-content: center; gap: 6px; z-index: 3; }
+    .slider-dots .dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.4); cursor: pointer; transition: all 0.3s; }
+    .slider-dots .dot.active { background: var(--green); transform: scale(1.2); }
+    
     .card-icon{width:44px;height:44px;background:var(--green-glow);border:1px solid rgba(200,240,76,.15);border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;font-size:1.3rem;color:var(--green)}
     .card-name{font-size:1.05rem;font-weight:600;margin-bottom:6px}
     .card-desc{font-size:.835rem;color:var(--silver);line-height:1.6;flex-grow:1;margin-bottom:18px}
@@ -509,7 +521,7 @@ function buildFilters() {
 }
 
 // ─────────────────────────────────────────────
-// RENDER (V2 adaptado)
+// RENDER (Com suporte a Multi-Slide / Carrossel)
 // ─────────────────────────────────────────────
 function fmtPrice(n) { return Number(n).toFixed(2).replace('.',','); }
 function fmtDur(m) {
@@ -526,12 +538,31 @@ function renderServices(cat) {
   svcs.forEach((svc,i) => {
     const el = document.createElement('div');
     const dl = `d${(i%4)+1}`;
+    
     if(currentView==='grid') {
       el.className=`svc-card-grid rev ${dl}`;
-      const firstImg = svc.imagens && svc.imagens[0] ? svc.imagens[0] : null;
-      const imgHtml = firstImg
-        ? '<div class="card-img"><img src="' + firstImg + '" alt="' + svc.name + '" onerror="this.parentElement.style.display=\'none\'"></div>'
-        : '<div class="card-icon"><i class="ph ' + svcIcon(svc.name) + '"></i></div>';
+      
+      let imgHtml = '';
+      if (svc.imagens && svc.imagens.length > 0) {
+        if (svc.imagens.length === 1) {
+          // Apenas uma imagem
+          imgHtml = `<div class="card-img"><img src="${svc.imagens[0]}" alt="${svc.name}" onerror="this.parentElement.style.display='none'"></div>`;
+        } else {
+          // Multi-Slide (Carrossel)
+          let imgs = svc.imagens.map((src, idx) => `<img src="${src}" class="${idx === 0 ? 'active' : ''}" alt="${svc.name}" onerror="this.style.display='none'">`).join('');
+          let dots = svc.imagens.map((_, idx) => `<div class="dot ${idx === 0 ? 'active' : ''}" onclick="changeCardSlide(event, this, ${idx})"></div>`).join('');
+          
+          imgHtml = `
+            <div class="card-img multi-slide">
+              <div class="card-slider-track">${imgs}</div>
+              <div class="slider-dots">${dots}</div>
+            </div>`;
+        }
+      } else {
+        // Nenhuma imagem, mostra o Ícone
+        imgHtml = `<div class="card-icon"><i class="ph ${svcIcon(svc.name)}"></i></div>`;
+      }
+
       el.innerHTML=`
         ${imgHtml}
         <div class="card-name">${svc.name}</div>
@@ -545,6 +576,7 @@ function renderServices(cat) {
           <button class="btn-book" onclick="openModal(${svc.id})"><i class="ph ph-calendar-plus"></i> Agendar</button>
         </div>`;
     } else {
+      // Visão de Lista
       el.className=`svc-card-list rev ${dl}`;
       el.innerHTML=`
         <div class="list-icon"><i class="ph ${svcIcon(svc.name)}"></i></div>
@@ -565,6 +597,41 @@ function renderServices(cat) {
   });
   observeReveal();
 }
+
+// ─────────────────────────────────────────────
+// LOGIC DO MULTI-SLIDE DOS CARDS
+// ─────────────────────────────────────────────
+function changeCardSlide(e, dotEl, idx) {
+  e.stopPropagation(); // Evita cliques acidentais no card inteiro
+  const slider = dotEl.closest('.multi-slide');
+  let imgs = slider.querySelectorAll('.card-slider-track img');
+  let dots = slider.querySelectorAll('.slider-dots .dot');
+  
+  imgs.forEach(i => i.classList.remove('active'));
+  dots.forEach(d => d.classList.remove('active'));
+  
+  if(imgs[idx]) imgs[idx].classList.add('active');
+  if(dots[idx]) dots[idx].classList.add('active');
+}
+
+// Timer global para rodar os sliders automaticamente
+setInterval(() => {
+  document.querySelectorAll('.card-img.multi-slide').forEach(slider => {
+    let imgs = slider.querySelectorAll('.card-slider-track img');
+    let dots = slider.querySelectorAll('.slider-dots .dot');
+    if(imgs.length < 2) return;
+    
+    let activeIdx = Array.from(imgs).findIndex(img => img.classList.contains('active'));
+    if(activeIdx === -1) activeIdx = 0;
+    
+    imgs[activeIdx].classList.remove('active');
+    if(dots[activeIdx]) dots[activeIdx].classList.remove('active');
+    
+    let nextIdx = (activeIdx + 1) % imgs.length;
+    imgs[nextIdx].classList.add('active');
+    if(dots[nextIdx]) dots[nextIdx].classList.add('active');
+  });
+}, 3500); // Muda de foto a cada 3.5 segundos
 
 // ─────────────────────────────────────────────
 // MODAL
