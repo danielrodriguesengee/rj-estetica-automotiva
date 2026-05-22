@@ -108,7 +108,7 @@ async function notifyOwner({ name, vehicle, vtype, clientPhone, clientWaLink, da
     `🚘 Veículo: ${vehicle} (${vtype})\n` +
     `🔧 Serviço: ${service.name}${extrasStr}\n` +
     `📅 Data: ${date} às ${time}\n` +
-    `💰 Total: R$ ${fmtPrice(total)}\n` +
+    `💰 Total: R$ ${fmtPrice(total)}\n\n\n` +
     `💬 Falar com cliente: ${clientWaLink}\n\n` +
     `RJ Estética Automotiva`;
 
