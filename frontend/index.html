@@ -778,8 +778,14 @@ function generateTimeSlots(date) {
   const minAdv=(data.bookingRules?.minAdvanceHours||2)*3600000;
   const now=Date.now();
   const grid=document.createElement('div'); grid.className='time-grid';
+  
+  // CORREÇÃO: Se o serviço for longo (>= 8h / 480min), o carro pernoita.
+  // Exigimos apenas 60 minutos antes do fechamento para o cliente dar entrada no veículo.
+  // Serviços mais curtos continuam precisando terminar no mesmo dia.
+  const requiredToday = dur >= 480 ? 60 : dur;
+
   let cur=openM, count=0;
-  while(cur+dur<=closeM){
+  while(cur + requiredToday <= closeM){
     const ts=fromMins(cur);
     const slotMs=new Date(date+'T'+ts+':00').getTime();
     const tooSoon=slotMs-now<minAdv;
