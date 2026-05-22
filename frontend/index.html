@@ -249,7 +249,7 @@
     <div class="step"><div class="step-n">01</div><div class="step-ico"><i class="ph ph-list-magnifying-glass"></i></div><h4>Escolha o serviço</h4><p>Navegue pelo catálogo, filtre por categoria e selecione o serviço ideal.</p></div>
     <div class="step"><div class="step-n">02</div><div class="step-ico"><i class="ph ph-plus-circle"></i></div><h4>Adicione extras</h4><p>Combine serviços relacionados recomendados para seu veículo.</p></div>
     <div class="step"><div class="step-n">03</div><div class="step-ico"><i class="ph ph-calendar-check"></i></div><h4>Data e horário</h4><p>Veja os slots disponíveis em tempo real.</p></div>
-    <div class="step"><div class="step-n">04</div><div class="step-ico"><i class="ph ph-whatsapp-logo"></i></div><h4>Confirmação</h4><p>Salvo no Google Agenda. Aviso instantâneo no WhatsApp.</p></div>
+    <div class="step"><div class="step-n">04</div><div class="step-ico"><i class="ph ph-whatsapp-logo"></i></div><h4>Só aguardar</h4><p>A gente entra em contato via WhatsApp logo logo.</p></div>
   </div>
 </section>
 
@@ -771,7 +771,7 @@ document.getElementById('booking-form').addEventListener('submit', async e => {
     });
     const j=await r.json();
     if(!r.ok||!j.success) throw new Error(j.error||'Erro desconhecido');
-    showToast('✅ Agendamento confirmado! Verifique o Google Agenda.','ok');
+    showToast('✅ Agendamento confirmado! Aguarde o nosso contato.','ok');
     closeModal();
   } catch(e) {
     showToast('Erro: '+e.message,'err');
