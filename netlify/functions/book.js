@@ -49,9 +49,10 @@ exports.handler = async (event) => {
       description: [
         `🚘 Veículo: ${vehicle} (${vtype})`,
         `📞 WhatsApp: ${clientPhone}`,
-        `💬 Abrir conversa: ${clientWaLink}`,
         `🔧 Serviço: ${service.name}${extrasStr}`,
         `💰 Total: R$ ${fmtPrice(total)}`,
+
+        `💬 Abrir conversa: ${clientWaLink}`,
         ``,
         `Agendado via site RJ Estética Automotiva`,
       ].join('\n'),
