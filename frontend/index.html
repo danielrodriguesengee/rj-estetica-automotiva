@@ -13,7 +13,7 @@
   <meta property="og:image" content="https://rjesteticaautomotiva.netlify.app/logo.webp">
   <meta property="og:locale" content="pt_BR">
   <meta property="og:site_name" content="RJ Estética Automotiva">
-
+  <link rel="icon" type="image/x-icon" href="./icone.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <script src="https://unpkg.com/@phosphor-icons/web@2.1.1/src/index.js"></script>
@@ -84,12 +84,6 @@
     .svc-card-grid::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--green),transparent);opacity:0;transition:opacity var(--tr)}
     .svc-card-grid:hover{border-color:var(--border-hover);transform:translateY(-3px)}
     .svc-card-grid:hover::before{opacity:1}
-    .card-img{width:calc(100% + 48px);margin:-24px -24px 20px;height:160px;overflow:hidden;border-radius:var(--radius) var(--radius) 0 0;flex-shrink:0}
-    .card-img img{width:100%;height:100%;object-fit:cover;filter:brightness(.85) saturate(.9);transition:all .5s ease}
-    .svc-card-grid:hover .card-img img{transform:scale(1.04);filter:brightness(1) saturate(1.1)}
-    .card-img{width:calc(100% + 48px);margin:-24px -24px 20px;height:160px;overflow:hidden;border-radius:var(--radius) var(--radius) 0 0;flex-shrink:0}
-    .card-img img{width:100%;height:100%;object-fit:cover;filter:brightness(.85) saturate(.9);transition:all .5s ease}
-    .svc-card-grid:hover .card-img img{transform:scale(1.04);filter:brightness(1) saturate(1.1)}
     .card-icon{width:44px;height:44px;background:var(--green-glow);border:1px solid rgba(200,240,76,.15);border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;font-size:1.3rem;color:var(--green)}
     .card-name{font-size:1.05rem;font-weight:600;margin-bottom:6px}
     .card-desc{font-size:.835rem;color:var(--silver);line-height:1.6;flex-grow:1;margin-bottom:18px}
@@ -276,7 +270,7 @@
 <footer>
   <div class="foot-inner">
     <div class="foot-logo">RJ<em>.</em>ESTÉTICA</div>
-    <p>Arcos, MG &nbsp;·&nbsp; (37) 99999-9999</p>
+    <p>📍 R. Orozimbo Pereira Silva, n° 3, Vila Boa Vista. Arcos/MG &nbsp;·&nbsp; (37) 99999-9999</p>
     <div class="foot-links">
       <a href="https://instagram.com/rjesteticaauto" target="_blank">Instagram</a>
       <a href="#services">Serviços</a>
@@ -409,41 +403,35 @@ let bookedSlots = [];     // [{ time: "09:00" }, ...]
 
 // ─────────────────────────────────────────────
 // SLIDER
-// SLIDER — alimentado pelo JSON do npoint
 // ─────────────────────────────────────────────
-// Cada serviço pode ter: "imagens": ["image/foto1.webp", "image/foto2.webp"]
-// Uma imagem → card fixo no slider. Mais de uma → cada foto vira um card separado.
-// Sem imagens cadastradas → slider é ocultado automaticamente.
-// ─────────────────────────────────────────────
+const SLIDER_DEFS = [
+  {label:'Lavagem Técnica',icon:'💧'},{label:'Polimento',icon:'✨'},
+  {label:'Higienização',icon:'🧹'},{label:'Vitrificação',icon:'💎'},
+  {label:'Detalhamento',icon:'🔍'},{label:'Faróis',icon:'💡'},
+  {label:'Motor',icon:'⚙️'},{label:'Vidros',icon:'🪟'},
+  {label:'Cristalização',icon:'🌟'},
+];
+
 function buildSlider() {
   const track = document.getElementById('slider-track');
-  if (!data?.services) return;
-
-  // Coleta todos os pares {nome, src} de todos os serviços
-  const items = [];
-  data.services.forEach(svc => {
-    (svc.imagens || []).forEach(src => items.push({ label: svc.name, src }));
-  });
-
-  if (items.length === 0) {
-    document.querySelector('.slider-wrap').style.display = 'none';
-    return;
-  }
-
-  // Duplica (ou triplica se poucos) para o loop infinito da animação marquee
-  const loop = items.length < 6
-    ? [...items, ...items, ...items]
-    : [...items, ...items];
-
-  loop.forEach(item => {
+  [...SLIDER_DEFS,...SLIDER_DEFS].forEach(item => {
     const c = document.createElement('div');
     c.className = 's-card';
-    c.innerHTML = '<img src="' + item.src + '" alt="' + item.label + '" onerror="this.parentElement.style.display=\'none\'">'
-      + '<div class="s-card-lbl">' + item.label + '</div>';
+    const slug = slugify(item.label);
+    c.innerHTML = `
+      <img src="image/${slug}.webp" alt="${item.label}"
+        onerror="this.style.display='none'">
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:3.2rem;opacity:.18">${item.icon}</div>
+      <div class="s-card-lbl">${item.label}</div>`;
     track.appendChild(c);
   });
 }
 
+function slugify(str) {
+  return str.toLowerCase().normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9\s-]/g,'')
+    .trim().replace(/\s+/g,'-');
+}
 
 // ─────────────────────────────────────────────
 // ICONS
@@ -477,7 +465,6 @@ async function init() {
   }
   buildFilters();
   renderServices('Todos');
-  buildSlider();       // após dados carregados — usa svc.imagens do JSON
   observeReveal();
 }
 
@@ -529,12 +516,8 @@ function renderServices(cat) {
     const dl = `d${(i%4)+1}`;
     if(currentView==='grid') {
       el.className=`svc-card-grid rev ${dl}`;
-      const firstImg = svc.imagens && svc.imagens[0] ? svc.imagens[0] : null;
-      const imgHtml = firstImg
-        ? '<div class="card-img"><img src="' + firstImg + '" alt="' + svc.name + '" onerror="this.parentElement.style.display=\'none\'"></div>'
-        : '<div class="card-icon"><i class="ph ' + svcIcon(svc.name) + '"></i></div>';
       el.innerHTML=`
-        ${imgHtml}
+        <div class="card-icon"><i class="ph ${svcIcon(svc.name)}"></i></div>
         <div class="card-name">${svc.name}</div>
         <div class="card-desc">${svc.description||''}</div>
         <div class="card-pills">
@@ -819,7 +802,7 @@ async function handleCancel(){
     } else {
       showToast(j.message||'Agendamento não encontrado.','warn');
     }
-  } catch(e){showToast('Erro ao cancelar. Ligue: (37) 99999-9999','err');}
+  } catch(e){showToast('Erro ao cancelar. Ligue: (37) 98418-5396','err');}
 }
 
 // ─────────────────────────────────────────────
@@ -849,7 +832,7 @@ function fallback(){return{businessHours:{timezone:'America/Sao_Paulo',days:{mon
 // ─────────────────────────────────────────────
 // BOOT
 // ─────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded',()=>{ init(); });
+document.addEventListener('DOMContentLoaded',()=>{ buildSlider(); init(); });
 </script>
 </body>
 </html>
