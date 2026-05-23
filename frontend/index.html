@@ -232,14 +232,6 @@
     }
   </style>
 </head>
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js');
-    });
-  }
-</script>
-
 <body>
 
 <header>
@@ -938,6 +930,16 @@ function fallback(){return{businessHours:{timezone:'America/Sao_Paulo',days:{mon
 // BOOT
 // ─────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded',()=>{ buildSlider(); init(); });
+
 </script>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js');
+    });
+  }
+</script>
+
 </body>
 </html>
