@@ -4,20 +4,39 @@
   command = "npm install"
 
 [functions]
-  directory = "netlify/functions"
+  directory    = "netlify/functions"
   node_bundler = "esbuild"
 
-# Redireciona /api/* para as Netlify Functions
 [[redirects]]
   from   = "/api/*"
   to     = "/.netlify/functions/:splat"
   status = 200
 
-# SPA fallback
+[[redirects]]
+  from   = "/manifest.json"
+  to     = "/manifest.json"
+  status = 200
+  force  = true
+
+[[redirects]]
+  from   = "/sw.js"
+  to     = "/sw.js"
+  status = 200
+  force  = true
+
+[[redirects]]
+  from   = "/icon-192.png"
+  to     = "/icon-192.png"
+  status = 200
+  force  = true
+
+[[redirects]]
+  from   = "/icon-512.png"
+  to     = "/icon-512.png"
+  status = 200
+  force  = true
+
 [[redirects]]
   from   = "/*"
   to     = "/index.html"
   status = 200
-
-[build]
-  publish = "frontend"
