@@ -7,169 +7,658 @@
     "state": "MG",
     "instagram": "@rjesteticaauto"
   },
-
   "businessHours": {
     "timezone": "America/Sao_Paulo",
     "days": {
-      "monday":    { "open": "08:00", "close": "18:00" },
-      "tuesday":   { "open": "08:00", "close": "18:00" },
-      "wednesday": { "open": "08:00", "close": "18:00" },
-      "thursday":  { "open": "08:00", "close": "18:00" },
-      "friday":    { "open": "08:00", "close": "18:00" },
-      "saturday":  { "open": "08:00", "close": "14:00" },
-      "sunday":    { "closed": true }
+      "monday": {
+        "open": "07:00",
+        "close": "17:00"
+      },
+      "tuesday": {
+        "open": "07:00",
+        "close": "17:00"
+      },
+      "wednesday": {
+        "open": "07:00",
+        "close": "17:00"
+      },
+      "thursday": {
+        "open": "07:00",
+        "close": "17:00"
+      },
+      "friday": {
+        "open": "07:00",
+        "close": "17:00"
+      },
+      "saturday": {
+        "open": "07:00",
+        "close": "17:00"
+      },
+      "sunday": {
+        "closed": true
+      }
     },
     "intervalMinutes": 30
   },
-
-  "categories": [
-    "Lavagem",
-    "Higienização",
-    "Polimento",
-    "Vitrificação",
-    "Detalhamento",
-    "Proteção",
-    "Motor",
-    "Vidros",
-    "Faróis"
-  ],
-
-  "services": [
-    {
-      "id": 1,
-      "category": "Lavagem",
-      "name": "Lavagem Simples",
-      "price": 100,
-      "durationMinutes": 60,
-      "description": "Lavagem externa completa com secagem técnica",
-      "imagens": [
-        "image/lavagem-simples.webp"
-      ]
-    },
-    {
-      "id": 2,
-      "category": "Lavagem",
-      "name": "Lavagem Técnica Premium",
-      "price": 150,
-      "durationMinutes": 120,
-      "description": "Lavagem detalhada com descontaminação superficial",
-      "imagens": [
-        "image/lavagem-tecnica-premium.webp"
-      ]
-    },
-    {
-      "id": 3,
-      "category": "Higienização",
-      "name": "Higienização Interna Completa",
-      "price": 250,
-      "durationMinutes": 240,
-      "description": "Limpeza profunda de bancos, carpetes, teto e painel",
-      "imagens": [
-        "image/higienizacao-interna-completa.webp"
-      ]
-    },
-    {
-      "id": 4,
-      "category": "Polimento",
-      "name": "Polimento Comercial",
-      "price": 450,
-      "durationMinutes": 360,
-      "description": "Remoção leve de riscos e revitalização de brilho",
-      "imagens": [
-        "image/polimento-comercial.webp"
-      ]
-    },
-    {
-      "id": 5,
-      "category": "Polimento",
-      "name": "Polimento Técnico 3 Etapas",
-      "price": 900,
-      "durationMinutes": 720,
-      "description": "Correção avançada de pintura",
-      "imagens": [
-        "image/polimento-tecnico-3-etapas.webp"
-      ]
-    },
-    {
-      "id": 6,
-      "category": "Vitrificação",
-      "name": "Vitrificação de Pintura",
-      "price": 1500,
-      "durationMinutes": 960,
-      "description": "Proteção cerâmica com durabilidade de até 3 anos",
-      "imagens": [
-        "image/vitrificacao-de-pintura.webp"
-      ]
-    },
-    {
-      "id": 7,
-      "category": "Detalhamento",
-      "name": "Detalhamento Completo",
-      "price": 1200,
-      "durationMinutes": 1440,
-      "description": "Tratamento completo interno e externo",
-      "imagens": [
-        "image/detalhamento-completo.webp"
-      ]
-    },
-    {
-      "id": 8,
-      "category": "Proteção",
-      "name": "Cristalização de Pintura",
-      "price": 350,
-      "durationMinutes": 240,
-      "description": "Proteção e brilho intenso",
-      "imagens": [
-        "image/cristalizacao-de-pintura.webp"
-      ]
-    },
-    {
-      "id": 9,
-      "category": "Motor",
-      "name": "Limpeza Técnica de Motor",
-      "price": 180,
-      "durationMinutes": 90,
-      "description": "Limpeza segura com proteção de componentes",
-      "imagens": [
-        "image/limpeza-tecnica-de-motor.webp"
-      ]
-    },
-    {
-      "id": 10,
-      "category": "Vidros",
-      "name": "Repelente de Chuva",
-      "price": 120,
-      "durationMinutes": 45,
-      "description": "Tratamento hidrofóbico",
-      "imagens": [
-        "image/repelente-de-Chuva.webp"]
-    },
-    {
-      "id": 11,
-      "category": "Faróis",
-      "name": "Restauração de Faróis",
-      "price": 250,
-      "durationMinutes": 120,
-      "description": "Recuperação de transparência",
-      "imagens": [
-        "image/restauracao-de-farois.webp"
-      ]
-    }
-  ],
-
-  "vehicleTypes": [
-    { "type": "Hatch",    "multiplier": 1.0 },
-    { "type": "Sedan",    "multiplier": 1.1 },
-    { "type": "SUV",      "multiplier": 1.3 },
-    { "type": "Pickup",   "multiplier": 1.4 },
-    { "type": "Blindado", "multiplier": 1.8 }
-  ],
-
   "bookingRules": {
     "minAdvanceHours": 2,
     "maxAdvanceDays": 30,
     "cancellationHours": 12
   },
-
-  "paymentMethods": ["PIX", "Cartão de Crédito", "Cartão de Débito", "Dinheiro"]
+  "paymentMethods": [
+    "PIX",
+    "Cartão de Crédito",
+    "Cartão de Débito",
+    "Dinheiro"
+  ],
+  "services": [
+    {
+      "id": 1,
+      "categoria_menu": "LAVAGENS",
+      "servico": "Ducha rápida — sem caixa de rodas",
+      "ativo": 1,
+      "observacao": "",
+      "durationMinutes": 45,
+      "description": "Lavagem rápida externa para remoção de sujeira leve.",
+      "imagens": ["image/cristalizacao-de-pintura.webp"],
+      "tamanhos": {
+        "pequeno": {
+          "preco_min": 30.00,
+          "preco_max": 30.00,
+          "ativo": 1
+        },
+        "medio": {
+          "preco_min": 40.00,
+          "preco_max": 40.00,
+          "ativo": 1
+        },
+        "grande_suv_utilitario": {
+          "preco_min": 50.00,
+          "preco_max": 50.00,
+          "ativo": 1
+        },
+        "picape_van": {
+          "preco_min": 50.00,
+          "preco_max": 50.00,
+          "ativo": 0
+        }
+      }
+    },
+    {
+      "id": 2,
+      "categoria_menu": "LAVAGENS",
+      "servico": "Ducha — com caixa de rodas",
+      "ativo": 1,
+      "observacao": "",
+      "durationMinutes": 60,
+      "description": "Lavagem externa com atenção especial à caixa de rodas.",
+      "imagens": [],
+      "tamanhos": {
+        "pequeno": {
+          "preco_min": 45.00,
+          "preco_max": 45.00,
+          "ativo": 1
+        },
+        "medio": {
+          "preco_min": 55.00,
+          "preco_max": 55.00,
+          "ativo": 1
+        },
+        "grande_suv_utilitario": {
+          "preco_min": 65.00,
+          "preco_max": 65.00,
+          "ativo": 1
+        },
+        "picape_van": {
+          "preco_min": 65.00,
+          "preco_max": 65.00,
+          "ativo": 0
+        }
+      }
+    },
+    {
+      "id": 3,
+      "categoria_menu": "LAVAGENS",
+      "servico": "Lavagem Completa Premium",
+      "ativo": 1,
+      "observacao": "",
+      "durationMinutes": 90,
+      "description": "Lavagem profunda com acabamento premium e proteção rápida.",
+      "imagens": [],
+      "tamanhos": {
+        "pequeno": {
+          "preco_min": 70.00,
+          "preco_max": 70.00,
+          "ativo": 1
+        },
+        "medio": {
+          "preco_min": 80.00,
+          "preco_max": 80.00,
+          "ativo": 1
+        },
+        "grande_suv_utilitario": {
+          "preco_min": 90.00,
+          "preco_max": 90.00,
+          "ativo": 1
+        },
+        "picape_van": {
+          "preco_min": 100.00,
+          "preco_max": 100.00,
+          "ativo": 1
+        }
+      }
+    },
+    {
+      "id": 4,
+      "categoria_menu": "LAVAGENS",
+      "servico": "Lavagem Técnica / Detalhada Premium",
+      "ativo": 1,
+      "observacao": "",
+      "durationMinutes": 150,
+      "description": "Atenção máxima aos detalhes, frestas, remoção de insetos e piche.",
+      "imagens": [],
+      "tamanhos": {
+        "pequeno": {
+          "preco_min": 110.00,
+          "preco_max": 110.00,
+          "ativo": 1
+        },
+        "medio": {
+          "preco_min": 125.00,
+          "preco_max": 125.00,
+          "ativo": 1
+        },
+        "grande_suv_utilitario": {
+          "preco_min": 140.00,
+          "preco_max": 140.00,
+          "ativo": 1
+        },
+        "picape_van": {
+          "preco_min": 160.00,
+          "preco_max": 160.00,
+          "ativo": 1
+        }
+      }
+    },
+    {
+      "id": 5,
+      "categoria_menu": "PROTEÇÃO E TRATAMENTOS",
+      "servico": "Proteção de Pintura — 1 mês",
+      "ativo": 1,
+      "observacao": "",
+      "durationMinutes": 60,
+      "description": "Aplicação de proteção rápida para a pintura.",
+      "imagens": [],
+      "tamanhos": {
+        "pequeno": {
+          "preco_min": 30.00,
+          "preco_max": 30.00,
+          "ativo": 1
+        },
+        "medio": {
+          "preco_min": 40.00,
+          "preco_max": 40.00,
+          "ativo": 1
+        },
+        "grande_suv_utilitario": {
+          "preco_min": 50.00,
+          "preco_max": 50.00,
+          "ativo": 1
+        },
+        "picape_van": {
+          "preco_min": 50.00,
+          "preco_max": 50.00,
+          "ativo": 0
+        }
+      }
+    },
+    {
+      "id": 6,
+      "categoria_menu": "PROTEÇÃO E TRATAMENTOS",
+      "servico": "Proteção de Pintura — 3 meses",
+      "ativo": 1,
+      "observacao": "",
+      "durationMinutes": 90,
+      "description": "Proteção intermediária com durabilidade estendida.",
+      "imagens": [],
+      "tamanhos": {
+        "pequeno": {
+          "preco_min": 70.00,
+          "preco_max": 70.00,
+          "ativo": 1
+        },
+        "medio": {
+          "preco_min": 80.00,
+          "preco_max": 80.00,
+          "ativo": 1
+        },
+        "grande_suv_utilitario": {
+          "preco_min": 90.00,
+          "preco_max": 90.00,
+          "ativo": 1
+        },
+        "picape_van": {
+          "preco_min": 90.00,
+          "preco_max": 90.00,
+          "ativo": 0
+        }
+      }
+    },
+    {
+      "id": 7,
+      "categoria_menu": "PROTEÇÃO E TRATAMENTOS",
+      "servico": "Proteção de Pintura — 1 ano",
+      "ativo": 1,
+      "observacao": "",
+      "durationMinutes": 180,
+      "description": "Proteção de alta resistência e durabilidade prolongada.",
+      "imagens": [],
+      "tamanhos": {
+        "pequeno": {
+          "preco_min": 150.00,
+          "preco_max": 150.00,
+          "ativo": 1
+        },
+        "medio": {
+          "preco_min": 170.00,
+          "preco_max": 170.00,
+          "ativo": 1
+        },
+        "grande_suv_utilitario": {
+          "preco_min": 190.00,
+          "preco_max": 190.00,
+          "ativo": 1
+        },
+        "picape_van": {
+          "preco_min": 190.00,
+          "preco_max": 190.00,
+          "ativo": 0
+        }
+      }
+    },
+    {
+      "id": 8,
+      "categoria_menu": "PROTEÇÃO E TRATAMENTOS",
+      "servico": "Descontaminação de Vidros",
+      "ativo": 1,
+      "observacao": "",
+      "durationMinutes": 45,
+      "description": "Remoção de marcas d'água e impurezas dos vidros.",
+      "imagens": [],
+      "tamanhos": {
+        "pequeno": {
+          "preco_min": 50.00,
+          "preco_max": 50.00,
+          "ativo": 1
+        },
+        "medio": {
+          "preco_min": 60.00,
+          "preco_max": 60.00,
+          "ativo": 1
+        },
+        "grande_suv_utilitario": {
+          "preco_min": 70.00,
+          "preco_max": 70.00,
+          "ativo": 1
+        },
+        "picape_van": {
+          "preco_min": 70.00,
+          "preco_max": 70.00,
+          "ativo": 0
+        }
+      }
+    },
+    {
+      "id": 9,
+      "categoria_menu": "PROTEÇÃO E TRATAMENTOS",
+      "servico": "Cristalização de Vidros",
+      "ativo": 1,
+      "observacao": "",
+      "durationMinutes": 60,
+      "description": "Proteção repelente de água para os vidros, garantindo visão limpa.",
+      "imagens": [],
+      "tamanhos": {
+        "pequeno": {
+          "preco_min": 40.00,
+          "preco_max": 40.00,
+          "ativo": 1
+        },
+        "medio": {
+          "preco_min": 60.00,
+          "preco_max": 60.00,
+          "ativo": 1
+        },
+        "grande_suv_utilitario": {
+          "preco_min": 80.00,
+          "preco_max": 80.00,
+          "ativo": 1
+        },
+        "picape_van": {
+          "preco_min": 80.00,
+          "preco_max": 80.00,
+          "ativo": 0
+        }
+      }
+    },
+    {
+      "id": 10,
+      "categoria_menu": "PROTEÇÃO E TRATAMENTOS",
+      "servico": "Descontaminação de Pintura",
+      "ativo": 1,
+      "observacao": "",
+      "durationMinutes": 90,
+      "description": "Remoção de contaminações, seiva de árvore e pulverizações da pintura.",
+      "imagens": [],
+      "tamanhos": {
+        "pequeno": {
+          "preco_min": 100.00,
+          "preco_max": 100.00,
+          "ativo": 1
+        },
+        "medio": {
+          "preco_min": 120.00,
+          "preco_max": 120.00,
+          "ativo": 1
+        },
+        "grande_suv_utilitario": {
+          "preco_min": 140.00,
+          "preco_max": 140.00,
+          "ativo": 1
+        },
+        "picape_van": {
+          "preco_min": 140.00,
+          "preco_max": 140.00,
+          "ativo": 0
+        }
+      }
+    },
+    {
+      "id": 11,
+      "categoria_menu": "PROTEÇÃO E TRATAMENTOS",
+      "servico": "Cristalização de Pintura",
+      "ativo": 1,
+      "observacao": "",
+      "durationMinutes": 180,
+      "description": "Tratamento estético para espelhamento e proteção profunda.",
+      "imagens": [],
+      "tamanhos": {
+        "pequeno": {
+          "preco_min": 150.00,
+          "preco_max": 150.00,
+          "ativo": 1
+        },
+        "medio": {
+          "preco_min": 170.00,
+          "preco_max": 170.00,
+          "ativo": 1
+        },
+        "grande_suv_utilitario": {
+          "preco_min": 190.00,
+          "preco_max": 190.00,
+          "ativo": 1
+        },
+        "picape_van": {
+          "preco_min": 190.00,
+          "preco_max": 190.00,
+          "ativo": 0
+        }
+      }
+    },
+    {
+      "id": 12,
+      "categoria_menu": "PROTEÇÃO E TRATAMENTOS",
+      "servico": "Vitrificação",
+      "ativo": 1,
+      "observacao": "",
+      "durationMinutes": 960,
+      "description": "Proteção extrema em nano cerâmica para a pintura do seu carro.",
+      "imagens": [],
+      "tamanhos": {
+        "pequeno": {
+          "preco_min": 800.00,
+          "preco_max": 800.00,
+          "ativo": 1
+        },
+        "medio": {
+          "preco_min": 1100.00,
+          "preco_max": 1100.00,
+          "ativo": 1
+        },
+        "grande_suv_utilitario": {
+          "preco_min": 1300.00,
+          "preco_max": 1300.00,
+          "ativo": 1
+        },
+        "picape_van": {
+          "preco_min": 1300.00,
+          "preco_max": 1300.00,
+          "ativo": 0
+        }
+      }
+    },
+    {
+      "id": 13,
+      "categoria_menu": "SERVIÇOS ESPECÍFICOS",
+      "servico": "Lavagem a seco do motor + proteção",
+      "ativo": 1,
+      "observacao": "Preço de faixa estimado. O valor final varia de acordo com o tamanho e estado de conservação do veículo.",
+      "durationMinutes": 90,
+      "description": "Limpeza técnica segura com proteção de componentes e verniz profissional.",
+      "imagens": [],
+      "tamanhos": {
+        "pequeno": {
+          "preco_min": 140.00,
+          "preco_max": 150.00,
+          "ativo": 1
+        },
+        "medio": {
+          "preco_min": 140.00,
+          "preco_max": 150.00,
+          "ativo": 1
+        },
+        "grande_suv_utilitario": {
+          "preco_min": 140.00,
+          "preco_max": 150.00,
+          "ativo": 1
+        },
+        "picape_van": {
+          "preco_min": 140.00,
+          "preco_max": 150.00,
+          "ativo": 1
+        }
+      }
+    },
+    {
+      "id": 14,
+      "categoria_menu": "SERVIÇOS ESPECÍFICOS",
+      "servico": "Restauração de plásticos e borrachas",
+      "ativo": 1,
+      "observacao": "Preço de faixa estimado. O valor final varia de acordo com o tamanho e estado de conservação do veículo.",
+      "durationMinutes": 60,
+      "description": "Revitalização e proteção contra raios UV em partes plásticas.",
+      "imagens": [],
+      "tamanhos": {
+        "pequeno": {
+          "preco_min": 60.00,
+          "preco_max": 80.00,
+          "ativo": 1
+        },
+        "medio": {
+          "preco_min": 60.00,
+          "preco_max": 80.00,
+          "ativo": 1
+        },
+        "grande_suv_utilitario": {
+          "preco_min": 60.00,
+          "preco_max": 80.00,
+          "ativo": 1
+        },
+        "picape_van": {
+          "preco_min": 60.00,
+          "preco_max": 80.00,
+          "ativo": 1
+        }
+      }
+    },
+    {
+      "id": 15,
+      "categoria_menu": "SERVIÇOS ESPECÍFICOS",
+      "servico": "Lavagem e conservação de chassi",
+      "ativo": 1,
+      "observacao": "Preço de faixa estimado. O valor final varia de acordo com o tamanho e estado de conservação do veículo.",
+      "durationMinutes": 120,
+      "description": "Limpeza profunda e aplicação de proteção na parte inferior do veículo.",
+      "imagens": [],
+      "tamanhos": {
+        "pequeno": {
+          "preco_min": 70.00,
+          "preco_max": 90.00,
+          "ativo": 1
+        },
+        "medio": {
+          "preco_min": 70.00,
+          "preco_max": 90.00,
+          "ativo": 1
+        },
+        "grande_suv_utilitario": {
+          "preco_min": 70.00,
+          "preco_max": 90.00,
+          "ativo": 1
+        },
+        "picape_van": {
+          "preco_min": 70.00,
+          "preco_max": 90.00,
+          "ativo": 1
+        }
+      }
+    },
+    {
+      "id": 16,
+      "categoria_menu": "SERVIÇOS ESPECÍFICOS",
+      "servico": "Restauração de Faróis — o par",
+      "ativo": 1,
+      "observacao": "Preço de faixa estimado. O valor final varia de acordo com o tamanho e estado de conservação do veículo.",
+      "durationMinutes": 120,
+      "description": "Recuperação total da transparência e luminosidade das lentes.",
+      "imagens": [],
+      "tamanhos": {
+        "pequeno": {
+          "preco_min": 140.00,
+          "preco_max": 200.00,
+          "ativo": 1
+        },
+        "medio": {
+          "preco_min": 140.00,
+          "preco_max": 200.00,
+          "ativo": 1
+        },
+        "grande_suv_utilitario": {
+          "preco_min": 140.00,
+          "preco_max": 200.00,
+          "ativo": 1
+        },
+        "picape_van": {
+          "preco_min": 140.00,
+          "preco_max": 200.00,
+          "ativo": 1
+        }
+      }
+    },
+    {
+      "id": 17,
+      "categoria_menu": "SERVIÇOS ESPECÍFICOS",
+      "servico": "Higienização Interna",
+      "ativo": 1,
+      "observacao": "Preço de faixa estimado. O valor final varia de acordo com o tamanho e estado de conservação do veículo.",
+      "durationMinutes": 240,
+      "description": "Limpeza profunda de bancos, teto, carpetes e painel.",
+      "imagens": [],
+      "tamanhos": {
+        "pequeno": {
+          "preco_min": 250.00,
+          "preco_max": 400.00,
+          "ativo": 1
+        },
+        "medio": {
+          "preco_min": 250.00,
+          "preco_max": 400.00,
+          "ativo": 1
+        },
+        "grande_suv_utilitario": {
+          "preco_min": 250.00,
+          "preco_max": 400.00,
+          "ativo": 1
+        },
+        "picape_van": {
+          "preco_min": 250.00,
+          "preco_max": 400.00,
+          "ativo": 1
+        }
+      }
+    },
+    {
+      "id": 18,
+      "categoria_menu": "ESTÉTICA E POLIMENTO",
+      "servico": "Polimento Comercial",
+      "ativo": 1,
+      "observacao": "Preço de faixa estimado. O valor final varia de acordo com o tamanho e estado de conservação do veículo.",
+      "durationMinutes": 360,
+      "description": "Remoção de riscos leves e revitalização do verniz.",
+      "imagens": [],
+      "tamanhos": {
+        "pequeno": {
+          "preco_min": 300.00,
+          "preco_max": 350.00,
+          "ativo": 1
+        },
+        "medio": {
+          "preco_min": 300.00,
+          "preco_max": 350.00,
+          "ativo": 1
+        },
+        "grande_suv_utilitario": {
+          "preco_min": 400.00,
+          "preco_max": 450.00,
+          "ativo": 1
+        },
+        "picape_van": {
+          "preco_min": 400.00,
+          "preco_max": 450.00,
+          "ativo": 0
+        }
+      }
+    },
+    {
+      "id": 19,
+      "categoria_menu": "ESTÉTICA E POLIMENTO",
+      "servico": "Polimento Técnico — 3 etapas + Cristalização",
+      "ativo": 1,
+      "observacao": "Preço de faixa estimado. O valor final varia de acordo com o tamanho e estado de conservação do veículo.",
+      "durationMinutes": 720,
+      "description": "Correção avançada de pintura, espelhamento e cristalização completa.",
+      "imagens": [],
+      "tamanhos": {
+        "pequeno": {
+          "preco_min": 450.00,
+          "preco_max": 550.00,
+          "ativo": 1
+        },
+        "medio": {
+          "preco_min": 450.00,
+          "preco_max": 550.00,
+          "ativo": 1
+        },
+        "grande_suv_utilitario": {
+          "preco_min": 650.00,
+          "preco_max": 750.00,
+          "ativo": 1
+        },
+        "picape_van": {
+          "preco_min": 650.00,
+          "preco_max": 750.00,
+          "ativo": 0
+        }
+      }
+    }
+  ]
 }
