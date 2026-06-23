@@ -98,7 +98,6 @@
     .svc-card-grid:hover{border-color:var(--border-hover);transform:translateY(-3px)}
     .svc-card-grid:hover::before{opacity:1}
     
-    /* CSS ATUALIZADO PARA SUPORTAR SLIDER NOS CARDS */
     .card-img{width:calc(100% + 48px);margin:-24px -24px 20px;height:160px;overflow:hidden;border-radius:var(--radius) var(--radius) 0 0;flex-shrink:0;position:relative}
     .card-img > img{width:100%;height:100%;object-fit:cover;filter:brightness(.85) saturate(.9);transition:all .5s ease}
     .svc-card-grid:hover .card-img > img{transform:scale(1.04);filter:brightness(1) saturate(1.1)}
@@ -334,6 +333,7 @@
           <span><i class="ph ph-currency-dollar-simple"></i><span id="m-price"></span></span>
           <span><i class="ph ph-tag"></i><span id="m-cat"></span></span>
         </div>
+        <div id="m-obs" style="font-size:0.75rem; color:var(--silver); margin-top:8px; font-style:italic; display:none;"></div>
         <div class="extras-sum" id="extras-sum" style="display:none">
           <div class="extras-sum-title">+ Serviços adicionados</div>
           <div class="extras-chips" id="extras-chips"></div>
@@ -383,13 +383,12 @@
               <input type="text" id="client-vehicle" class="fi" placeholder="Gol 2019" required>
             </div>
             <div class="fg" style="margin:0">
-              <label class="fl">Tipo</label>
+              <label class="fl">Porte</label>
               <select id="client-vtype" class="fi">
-                <option value="Hatch"    data-mult="1.0">Hatch (×1.0)</option>
-                <option value="Sedan"    data-mult="1.1">Sedan (×1.1)</option>
-                <option value="SUV"      data-mult="1.3">SUV (×1.3)</option>
-                <option value="Pickup"   data-mult="1.4">Pickup (×1.4)</option>
-                <option value="Blindado" data-mult="1.8">Blindado (×1.8)</option>
+                <option value="pequeno">Pequeno (Hatch)</option>
+                <option value="medio">Médio (Sedan)</option>
+                <option value="grande_suv_utilitario">Grande / SUV / Utilitário</option>
+                <option value="picape_van">Picape / Van</option>
               </select>
             </div>
           </div>
@@ -418,7 +417,6 @@
 // ─────────────────────────────────────────────
 const CFG = {
   NPOINT_URL: 'https://api.npoint.io/ca31c753f52a34054c99',
-  // As rotas /api/* são redirecionadas para netlify/functions/* pelo netlify.toml
   API_BOOK  : '/api/book',
   API_SLOTS : '/api/slots',
   API_CANCEL: '/api/cancel',
@@ -431,10 +429,10 @@ let data        = null;
 let selSvc      = null;
 let selExtras   = new Set();
 let currentView = 'grid';
-let bookedSlots = [];     // [{ time: "09:00" }, ...]
+let bookedSlots = [];
 
 // ─────────────────────────────────────────────
-// SLIDER (Restaurado da V1)
+// SLIDER
 // ─────────────────────────────────────────────
 const SLIDER_DEFS = [
   {label:'Lavagem Técnica',icon:'💧'},{label:'Polimento',icon:'✨'},
@@ -451,8 +449,7 @@ function buildSlider() {
     c.className = 's-card';
     const slug = slugify(item.label);
     c.innerHTML = `
-      <img src="image/${slug}.webp" alt="${item.label}"
-        onerror="this.style.display='none'">
+      <img src="image/${slug}.webp" alt="${item.label}" onerror="this.style.display='none'">
       <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:3.2rem;opacity:.18">${item.icon}</div>
       <div class="s-card-lbl">${item.label}</div>`;
     track.appendChild(c);
@@ -470,7 +467,7 @@ function slugify(str) {
 // ─────────────────────────────────────────────
 function svcIcon(name) {
   const n = name.toLowerCase();
-  if(n.includes('lavag'))                         return 'ph-drop';
+  if(n.includes('lavag')||n.includes('ducha'))    return 'ph-drop';
   if(n.includes('polim'))                         return 'ph-sparkle';
   if(n.includes('higieni')||n.includes('intern')) return 'ph-seat';
   if(n.includes('vitri')||n.includes('crist'))    return 'ph-shield-check';
@@ -492,9 +489,13 @@ async function init() {
     data = await r.json();
     if (!data.services) throw new Error('sem services');
   } catch(e) {
-    console.warn('npoint fallback:', e.message);
+    console.warn('npoint fallback utilizado.');
     data = fallback();
   }
+  
+  // Assegurar IDs dinâmicos caso a nova API esqueça deles
+  data.services.forEach((s, idx) => { if(!s.id) s.id = idx + 1; });
+
   buildFilters();
   renderServices('Todos');
   observeReveal();
@@ -512,11 +513,13 @@ function setView(v) {
 }
 
 // ─────────────────────────────────────────────
-// FILTERS
+// FILTERS (Gerados dinamicamente baseado na categoria_menu)
 // ─────────────────────────────────────────────
 function buildFilters() {
   const bar = document.getElementById('filter-bar');
-  ['Todos',...data.categories].forEach(cat => {
+  const cats = [...new Set(data.services.filter(s=>s.ativo===1).map(s=>s.categoria_menu))];
+  
+  ['Todos',...cats].forEach(cat => {
     const b = document.createElement('button');
     b.className = 'f-btn' + (cat==='Todos'?' active':'');
     b.textContent = cat; b.dataset.cat = cat;
@@ -529,7 +532,7 @@ function buildFilters() {
 }
 
 // ─────────────────────────────────────────────
-// RENDER (Com suporte a Multi-Slide / Carrossel)
+// RENDER HELPERS
 // ─────────────────────────────────────────────
 function fmtPrice(n) { return Number(n).toFixed(2).replace('.',','); }
 function fmtDur(m) {
@@ -537,67 +540,72 @@ function fmtDur(m) {
   const h=Math.floor(m/60),r=m%60; return r?`${h}h${r}min`:`${h}h`;
 }
 
+// Extrai o menor preço disponível do serviço para exibir "a partir de"
+function getMinPrice(svc) {
+  let min = Infinity;
+  for (const key in svc.tamanhos) {
+    const obj = svc.tamanhos[key];
+    if (obj.ativo === 1 && obj.preco_min < min) min = obj.preco_min;
+  }
+  return min === Infinity ? 0 : min;
+}
+
 function renderServices(cat) {
   const container = document.getElementById('services-container');
   container.innerHTML = '';
-  const svcs = cat==='Todos' ? data.services : data.services.filter(s=>s.category===cat);
+  
+  const svcs = cat==='Todos' 
+    ? data.services.filter(s=>s.ativo===1) 
+    : data.services.filter(s=>s.ativo===1 && s.categoria_menu===cat);
+
   if(!svcs.length) { container.innerHTML='<p style="color:var(--silver);padding:20px 0">Nenhum serviço nesta categoria.</p>'; return; }
 
   svcs.forEach((svc,i) => {
     const el = document.createElement('div');
     const dl = `d${(i%4)+1}`;
+    const minPriceStr = fmtPrice(getMinPrice(svc));
     
     if(currentView==='grid') {
       el.className=`svc-card-grid rev ${dl}`;
-      
       let imgHtml = '';
       if (svc.imagens && svc.imagens.length > 0) {
         if (svc.imagens.length === 1) {
-          // Apenas uma imagem
-          imgHtml = `<div class="card-img"><img src="${svc.imagens[0]}" alt="${svc.name}" onerror="this.parentElement.style.display='none'"></div>`;
+          imgHtml = `<div class="card-img"><img src="${svc.imagens[0]}" alt="${svc.servico}" onerror="this.parentElement.style.display='none'"></div>`;
         } else {
-          // Multi-Slide (Carrossel)
-          let imgs = svc.imagens.map((src, idx) => `<img src="${src}" class="${idx === 0 ? 'active' : ''}" alt="${svc.name}" onerror="this.style.display='none'">`).join('');
+          let imgs = svc.imagens.map((src, idx) => `<img src="${src}" class="${idx === 0 ? 'active' : ''}" alt="${svc.servico}" onerror="this.style.display='none'">`).join('');
           let dots = svc.imagens.map((_, idx) => `<div class="dot ${idx === 0 ? 'active' : ''}" onclick="changeCardSlide(event, this, ${idx})"></div>`).join('');
-          
-          imgHtml = `
-            <div class="card-img multi-slide">
-              <div class="card-slider-track">${imgs}</div>
-              <div class="slider-dots">${dots}</div>
-            </div>`;
+          imgHtml = `<div class="card-img multi-slide"><div class="card-slider-track">${imgs}</div><div class="slider-dots">${dots}</div></div>`;
         }
       } else {
-        // Nenhuma imagem, mostra o Ícone
-        imgHtml = `<div class="card-icon"><i class="ph ${svcIcon(svc.name)}"></i></div>`;
+        imgHtml = `<div class="card-icon"><i class="ph ${svcIcon(svc.servico)}"></i></div>`;
       }
 
       el.innerHTML=`
         ${imgHtml}
-        <div class="card-name">${svc.name}</div>
+        <div class="card-name">${svc.servico}</div>
         <div class="card-desc">${svc.description||''}</div>
         <div class="card-pills">
-          <span class="pill"><i class="ph ph-clock"></i> ${fmtDur(svc.durationMinutes)}</span>
-          ${svc.category?`<span class="pill"><i class="ph ph-tag"></i> ${svc.category}</span>`:''}
+          <span class="pill"><i class="ph ph-clock"></i> ${fmtDur(svc.durationMinutes||60)}</span>
+          <span class="pill"><i class="ph ph-tag"></i> ${svc.categoria_menu}</span>
         </div>
         <div class="card-foot">
-          <div class="card-price"><small>a partir de</small>R$ ${fmtPrice(svc.price)}</div>
+          <div class="card-price"><small>a partir de</small>R$ ${minPriceStr}</div>
           <button class="btn-book" onclick="openModal(${svc.id})"><i class="ph ph-calendar-plus"></i> Agendar</button>
         </div>`;
     } else {
-      // Visão de Lista
       el.className=`svc-card-list rev ${dl}`;
       el.innerHTML=`
-        <div class="list-icon"><i class="ph ${svcIcon(svc.name)}"></i></div>
+        <div class="list-icon"><i class="ph ${svcIcon(svc.servico)}"></i></div>
         <div class="list-body">
-          <div class="list-name">${svc.name}</div>
+          <div class="list-name">${svc.servico}</div>
           <div class="list-desc">${svc.description||''}</div>
           <div class="list-meta">
-            <span class="pill"><i class="ph ph-clock"></i> ${fmtDur(svc.durationMinutes)}</span>
-            ${svc.category?`<span class="pill"><i class="ph ph-tag"></i> ${svc.category}</span>`:''}
+            <span class="pill"><i class="ph ph-clock"></i> ${fmtDur(svc.durationMinutes||60)}</span>
+            <span class="pill"><i class="ph ph-tag"></i> ${svc.categoria_menu}</span>
           </div>
         </div>
         <div class="list-right">
-          <div class="list-price"><small>a partir de</small>R$ ${fmtPrice(svc.price)}</div>
+          <div class="list-price"><small>a partir de</small>R$ ${minPriceStr}</div>
           <button class="btn-book" onclick="openModal(${svc.id})"><i class="ph ph-calendar-plus"></i></button>
         </div>`;
     }
@@ -606,43 +614,34 @@ function renderServices(cat) {
   observeReveal();
 }
 
-// ─────────────────────────────────────────────
-// LOGIC DO MULTI-SLIDE DOS CARDS
-// ─────────────────────────────────────────────
 function changeCardSlide(e, dotEl, idx) {
-  e.stopPropagation(); // Evita cliques acidentais no card inteiro
+  e.stopPropagation();
   const slider = dotEl.closest('.multi-slide');
   let imgs = slider.querySelectorAll('.card-slider-track img');
   let dots = slider.querySelectorAll('.slider-dots .dot');
-  
   imgs.forEach(i => i.classList.remove('active'));
   dots.forEach(d => d.classList.remove('active'));
-  
   if(imgs[idx]) imgs[idx].classList.add('active');
   if(dots[idx]) dots[idx].classList.add('active');
 }
 
-// Timer global para rodar os sliders automaticamente
 setInterval(() => {
   document.querySelectorAll('.card-img.multi-slide').forEach(slider => {
     let imgs = slider.querySelectorAll('.card-slider-track img');
     let dots = slider.querySelectorAll('.slider-dots .dot');
     if(imgs.length < 2) return;
-    
     let activeIdx = Array.from(imgs).findIndex(img => img.classList.contains('active'));
     if(activeIdx === -1) activeIdx = 0;
-    
     imgs[activeIdx].classList.remove('active');
     if(dots[activeIdx]) dots[activeIdx].classList.remove('active');
-    
     let nextIdx = (activeIdx + 1) % imgs.length;
     imgs[nextIdx].classList.add('active');
     if(dots[nextIdx]) dots[nextIdx].classList.add('active');
   });
-}, 3500); // Muda de foto a cada 3.5 segundos
+}, 3500);
 
 // ─────────────────────────────────────────────
-// MODAL
+// MODAL & SUMMARY LOGIC
 // ─────────────────────────────────────────────
 function openModal(id) {
   selSvc = data.services.find(s=>s.id===id);
@@ -678,22 +677,63 @@ function goStep(n) {
   document.getElementById('m-title').textContent=['Serviços adicionais','Data e Horário','Seus dados'][n-1];
 }
 
-document.getElementById('client-vtype').addEventListener('change', updateSummary);
+document.getElementById('client-vtype').addEventListener('change', () => {
+  updateSummary();
+  buildRelated(); // O preço dos extras mostrados na tela muda conforme o tamanho
+});
 
 function updateSummary() {
   if(!selSvc) return;
-  document.getElementById('m-svc-name').textContent = selSvc.name;
-  document.getElementById('m-dur').textContent       = fmtDur(selSvc.durationMinutes);
-  document.getElementById('m-cat').textContent       = selSvc.category||'';
-  const mult = parseFloat(document.getElementById('client-vtype').selectedOptions[0]?.dataset.mult||'1');
-  let total = selSvc.price * mult;
+  document.getElementById('m-svc-name').textContent = selSvc.servico;
+  document.getElementById('m-dur').textContent       = fmtDur(selSvc.durationMinutes||60);
+  document.getElementById('m-cat').textContent       = selSvc.categoria_menu||'';
+  
+  const obsEl = document.getElementById('m-obs');
+  if(selSvc.observacao) {
+    obsEl.textContent = '* ' + selSvc.observacao;
+    obsEl.style.display = 'block';
+  } else {
+    obsEl.style.display = 'none';
+  }
+
+  const vtype = document.getElementById('client-vtype').value;
+  const sData = selSvc.tamanhos[vtype];
+  const btnSubmit = document.getElementById('btn-submit');
+  const priceEl = document.getElementById('m-price');
+  const totalEl = document.getElementById('m-total');
+
+  if (!sData || sData.ativo === 0) {
+    priceEl.textContent = "Indisponível";
+    totalEl.textContent = "Não aplicável";
+    totalEl.style.color = "var(--red)";
+    if (btnSubmit) btnSubmit.disabled = true;
+    return;
+  }
+
+  if(btnSubmit) btnSubmit.disabled = false;
+  totalEl.style.color = "var(--green)";
+
+  let totalMin = sData.preco_min;
+  let totalMax = sData.preco_max;
   const extraNames=[];
+
   selExtras.forEach(id => {
-    const s=data.services.find(x=>x.id===id);
-    if(s){total+=s.price*mult; extraNames.push(s.name);}
+    const ext = data.services.find(x=>x.id===id);
+    if(ext){
+       const eData = ext.tamanhos[vtype];
+       if(eData && eData.ativo === 1) {
+          totalMin += eData.preco_min;
+          totalMax += eData.preco_max;
+          extraNames.push(ext.servico);
+       }
+    }
   });
-  document.getElementById('m-price').textContent = 'R$ '+fmtPrice(selSvc.price);
-  document.getElementById('m-total').textContent = 'R$ '+fmtPrice(total);
+
+  const formatRange = (min, max) => min === max ? `R$ ${fmtPrice(min)}` : `R$ ${fmtPrice(min)} a R$ ${fmtPrice(max)}`;
+  
+  priceEl.textContent = formatRange(sData.preco_min, sData.preco_max);
+  totalEl.textContent = formatRange(totalMin, totalMax);
+
   const sumEl=document.getElementById('extras-sum');
   const chipsEl=document.getElementById('extras-chips');
   if(extraNames.length){
@@ -703,36 +743,45 @@ function updateSummary() {
 }
 
 // ─────────────────────────────────────────────
-// RELATED SERVICES
+// RELATED SERVICES (Agora baseado na nova estrutura)
 // ─────────────────────────────────────────────
 const RELATIONS={
-  'Lavagem':['Higienização','Vitrificação','Motor'],
-  'Higienização':['Lavagem','Faróis','Proteção'],
-  'Polimento':['Vitrificação','Proteção','Lavagem'],
-  'Vitrificação':['Polimento','Higienização','Proteção'],
-  'Detalhamento':['Vitrificação','Motor','Faróis'],
-  'Proteção':['Polimento','Vitrificação','Lavagem'],
-  'Motor':['Lavagem','Higienização'],
-  'Vidros':['Faróis','Proteção'],
-  'Faróis':['Vidros','Lavagem','Higienização'],
+  'LAVAGENS':['PROTEÇÃO E TRATAMENTOS','SERVIÇOS ESPECÍFICOS','ESTÉTICA E POLIMENTO'],
+  'PROTEÇÃO E TRATAMENTOS':['LAVAGENS','ESTÉTICA E POLIMENTO','SERVIÇOS ESPECÍFICOS'],
+  'SERVIÇOS ESPECÍFICOS':['LAVAGENS','PROTEÇÃO E TRATAMENTOS'],
+  'ESTÉTICA E POLIMENTO':['PROTEÇÃO E TRATAMENTOS','SERVIÇOS ESPECÍFICOS']
 };
 
 function buildRelated() {
   const grid=document.getElementById('related-grid'); grid.innerHTML='';
-  const relCats=RELATIONS[selSvc?.category||'']||[];
-  const candidates=data.services.filter(s=>s.id!==selSvc.id&&relCats.includes(s.category)).slice(0,4);
-  if(!candidates.length){grid.innerHTML='<p class="time-hint">Nenhuma sugestão para este serviço.</p>';return;}
+  const relCats=RELATIONS[selSvc?.categoria_menu||'']||[];
+  const vtype = document.getElementById('client-vtype').value;
+
+  // Filtra serviços diferentes do atual, que pertençam à categoria relacionada, E que estejam disponíveis para o tamanho atual do carro
+  const candidates=data.services.filter(s=>
+    s.id !== selSvc.id && 
+    relCats.includes(s.categoria_menu) && 
+    s.ativo === 1 &&
+    s.tamanhos[vtype]?.ativo === 1
+  ).slice(0,4);
+
+  if(!candidates.length){grid.innerHTML='<p class="time-hint">Nenhuma sugestão disponível para este tamanho.</p>';return;}
+  
   candidates.forEach((svc,i)=>{
     const el=document.createElement('div');
-    el.className='rel-card'; el.id=`rel-${svc.id}`;
+    const sData = svc.tamanhos[vtype];
+    const priceStr = sData.preco_min === sData.preco_max ? `R$ ${fmtPrice(sData.preco_min)}` : `a partir de R$ ${fmtPrice(sData.preco_min)}`;
+
+    el.className='rel-card' + (selExtras.has(svc.id)?' checked':''); 
+    el.id=`rel-${svc.id}`;
     el.onclick=()=>toggleExtra(svc.id,el);
     el.innerHTML=`
-      <div class="rel-check" id="rchk-${svc.id}"><i class="ph ph-check" style="display:none"></i></div>
+      <div class="rel-check" id="rchk-${svc.id}"><i class="ph ph-check" style="display:${selExtras.has(svc.id)?'block':'none'}"></i></div>
       <div class="rel-body">
-        <div class="rel-name">${svc.name}</div>
+        <div class="rel-name">${svc.servico}</div>
         <div class="rel-desc">${svc.description||''}</div>
       </div>
-      <div class="rel-price">+R$ ${fmtPrice(svc.price)}</div>
+      <div class="rel-price">+ ${priceStr}</div>
       ${i===0?'<div class="rel-badge">Recomendado</div>':''}`;
     grid.appendChild(el);
   });
@@ -749,26 +798,23 @@ function toggleExtra(id,el){
 }
 
 // ─────────────────────────────────────────────
-// SLOTS (busca do backend)
+// SLOTS
 // ─────────────────────────────────────────────
 document.getElementById('booking-date').addEventListener('change', async () => {
   const date = document.getElementById('booking-date').value;
   if(!date||!selSvc) return;
 
-  // Mostra loading nos slots
   const c=document.getElementById('time-slots-container');
   c.innerHTML='<p class="time-hint"><span class="spin" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px"></span>Consultando agenda...</p>';
 
   try {
     const r = await fetch(`${CFG.API_SLOTS}?date=${date}`);
     const j = await r.json();
-    // busy = [{ startMins, endMins, startTime, endTime, summary }, ...]
     bookedSlots = j.busy || [];
   } catch(e) {
     console.warn('slots fetch falhou, prosseguindo sem bloqueios:', e.message);
     bookedSlots = [];
   }
-
   generateTimeSlots(date);
 });
 
@@ -782,14 +828,11 @@ function generateTimeSlots(date) {
     c.innerHTML='<p class="time-hint" style="color:var(--red)">Não atendemos neste dia.</p>'; return;
   }
   const openM=toMins(dayConf.open), closeM=toMins(dayConf.close);
-  const dur=selSvc.durationMinutes, interval=data.businessHours?.intervalMinutes||30;
+  const dur=selSvc.durationMinutes||60, interval=data.businessHours?.intervalMinutes||30;
   const minAdv=(data.bookingRules?.minAdvanceHours||2)*3600000;
   const now=Date.now();
   const grid=document.createElement('div'); grid.className='time-grid';
   
-  // CORREÇÃO: Se o serviço for longo (>= 8h / 480min), o carro pernoita.
-  // Exigimos apenas 60 minutos antes do fechamento para o cliente dar entrada no veículo.
-  // Serviços mais curtos continuam precisando terminar no mesmo dia.
   const requiredToday = dur >= 480 ? 60 : dur;
 
   let cur=openM, count=0;
@@ -797,9 +840,6 @@ function generateTimeSlots(date) {
     const ts=fromMins(cur);
     const slotMs=new Date(date+'T'+ts+':00').getTime();
     const tooSoon=slotMs-now<minAdv;
-
-    // Colisão: o slot [cur, cur+dur] colide com um evento ocupado [startMins, endMins]
-    // se cur < endMins E cur+dur > startMins
     const collision = bookedSlots.find(b => cur < b.endMins && (cur + dur) > b.startMins);
 
     const blocked = tooSoon || !!collision;
@@ -807,9 +847,7 @@ function generateTimeSlots(date) {
     btn.type='button';
     btn.className='t-btn'+(blocked?' booked':'');
     btn.textContent=ts;
-    btn.title=collision
-      ? `Ocupado (${collision.startTime}–${collision.endTime})`
-      : tooSoon ? 'Muito em breve' : '';
+    btn.title=collision ? `Ocupado (${collision.startTime}–${collision.endTime})` : tooSoon ? 'Muito em breve' : '';
     if(!blocked) btn.onclick=()=>selTime(btn,ts);
     grid.appendChild(btn); cur+=interval; count++;
   }
@@ -828,32 +866,58 @@ function toMins(s){const[h,m]=s.split(':').map(Number);return h*60+m;}
 function fromMins(m){return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');}
 
 // ─────────────────────────────────────────────
-// FORM SUBMIT → chama /api/book
+// FORM SUBMIT
 // ─────────────────────────────────────────────
 document.getElementById('booking-form').addEventListener('submit', async e => {
   e.preventDefault();
   const time=document.getElementById('sel-time').value;
   if(!time){showToast('Selecione um horário.','warn');return;}
 
-  const vtSel=document.getElementById('client-vtype');
-  const mult=parseFloat(vtSel.selectedOptions[0]?.dataset.mult||'1');
-  let total=selSvc.price*mult;
+  const vtype = document.getElementById('client-vtype').value;
+  const sData = selSvc.tamanhos[vtype];
+  
+  if(!sData || sData.ativo === 0) {
+    showToast('Serviço indisponível para este porte.','err'); return;
+  }
+
+  let totalMin = sData.preco_min;
+  let totalMax = sData.preco_max;
   const extrasArr=[];
+
   selExtras.forEach(id=>{
-    const s=data.services.find(x=>x.id===id);
-    if(s){total+=s.price*mult; extrasArr.push({id:s.id,name:s.name,price:s.price,durationMinutes:s.durationMinutes});}
+    const ext=data.services.find(x=>x.id===id);
+    if(ext){
+      const eData = ext.tamanhos[vtype];
+      if(eData && eData.ativo===1) {
+        totalMin += eData.preco_min;
+        totalMax += eData.preco_max;
+        extrasArr.push({
+          id: ext.id, 
+          name: ext.servico, 
+          price: eData.preco_min, // backend não aceita array ou string, enviamos min para o cálculo do backend funcionar
+          durationMinutes: ext.durationMinutes||60
+        });
+      }
+    }
   });
+
+  // O backend book.js espera 'service.name' e 'total' numérico
+  const isEstimate = totalMin !== totalMax;
+  const payloadService = {
+    name: selSvc.servico + (isEstimate ? ' (Preço Sujeito a Avaliação)' : ''),
+    durationMinutes: selSvc.durationMinutes||60
+  };
 
   const payload={
     name    : document.getElementById('client-name').value.trim(),
     vehicle : document.getElementById('client-vehicle').value.trim(),
-    vtype   : vtSel.value,
+    vtype   : document.getElementById('client-vtype').options[document.getElementById('client-vtype').selectedIndex].text,
     phone   : document.getElementById('client-phone').value.trim(),
     date    : document.getElementById('booking-date').value,
     time,
-    service : selSvc,
+    service : payloadService,
     extras  : extrasArr,
-    total,
+    total   : totalMin, // Enviado o mínimo, a observação vai no nome do serviço
   };
 
   const btn=document.getElementById('btn-submit');
@@ -878,9 +942,6 @@ document.getElementById('booking-form').addEventListener('submit', async e => {
   }
 });
 
-// ─────────────────────────────────────────────
-// CANCEL → chama /api/cancel
-// ─────────────────────────────────────────────
 async function handleCancel(){
   const name=document.getElementById('cancel-name').value.trim();
   const phone=document.getElementById('cancel-phone').value.trim();
@@ -902,9 +963,6 @@ async function handleCancel(){
   } catch(e){showToast('Erro ao cancelar. Ligue: (37) 98418-5396','err');}
 }
 
-// ─────────────────────────────────────────────
-// TOAST + REVEAL
-// ─────────────────────────────────────────────
 let toastTmr;
 function showToast(msg,type='ok'){
   const t=document.getElementById('toast');
@@ -922,9 +980,121 @@ function observeReveal(){
 }
 
 // ─────────────────────────────────────────────
-// FALLBACK
+// FALLBACK SE NPOINT CAIR - ADAPTADO PARA NOVA ESTRUTURA
 // ─────────────────────────────────────────────
-function fallback(){return{businessHours:{timezone:'America/Sao_Paulo',days:{monday:{open:'08:00',close:'18:00'},tuesday:{open:'08:00',close:'18:00'},wednesday:{open:'08:00',close:'18:00'},thursday:{open:'08:00',close:'18:00'},friday:{open:'08:00',close:'18:00'},saturday:{open:'08:00',close:'14:00'},sunday:{closed:true}},intervalMinutes:30},categories:['Lavagem','Higienização','Polimento','Vitrificação','Detalhamento','Proteção','Motor','Vidros','Faróis'],bookingRules:{minAdvanceHours:2,maxAdvanceDays:30,cancellationHours:12},services:[{id:1,category:'Lavagem',name:'Lavagem Simples',price:80,durationMinutes:60,description:'Lavagem externa completa com secagem técnica'},{id:2,category:'Lavagem',name:'Lavagem Técnica Premium',price:150,durationMinutes:120,description:'Lavagem detalhada com descontaminação superficial'},{id:3,category:'Higienização',name:'Higienização Interna Completa',price:250,durationMinutes:240,description:'Limpeza profunda de bancos, carpetes, teto e painel'},{id:4,category:'Polimento',name:'Polimento Comercial',price:450,durationMinutes:360,description:'Remoção leve de riscos e revitalização de brilho'},{id:5,category:'Polimento',name:'Polimento Técnico 3 Etapas',price:900,durationMinutes:720,description:'Correção avançada de pintura'},{id:6,category:'Vitrificação',name:'Vitrificação de Pintura',price:1500,durationMinutes:960,description:'Proteção cerâmica com durabilidade de até 3 anos'},{id:7,category:'Detalhamento',name:'Detalhamento Completo',price:1200,durationMinutes:1440,description:'Tratamento completo interno e externo'},{id:8,category:'Proteção',name:'Cristalização de Pintura',price:350,durationMinutes:240,description:'Proteção e brilho intenso'},{id:9,category:'Motor',name:'Limpeza Técnica de Motor',price:180,durationMinutes:90,description:'Limpeza segura com proteção de componentes'},{id:10,category:'Vidros',name:'Repelente de Chuva',price:120,durationMinutes:45,description:'Tratamento hidrofóbico'},{id:11,category:'Faróis',name:'Restauração de Faróis',price:250,durationMinutes:120,description:'Recuperação de transparência'}]};}
+function fallback(){
+  return {
+    "businessHours": { "timezone": "America/Sao_Paulo", "days": { "monday": { "open": "08:00", "close": "18:00" }, "tuesday": { "open": "08:00", "close": "18:00" }, "wednesday": { "open": "08:00", "close": "18:00" }, "thursday": { "open": "08:00", "close": "18:00" }, "friday": { "open": "08:00", "close": "18:00" }, "saturday": { "open": "08:00", "close": "14:00" }, "sunday": { "closed": true } }, "intervalMinutes": 30 },
+    "bookingRules": { "minAdvanceHours": 2, "maxAdvanceDays": 30, "cancellationHours": 12 },
+    "services": [
+      {
+        "id": 1,
+        "categoria_menu": "LAVAGENS",
+        "servico": "Ducha rápida — sem caixa de rodas",
+        "ativo": 1,
+        "observacao": "",
+        "durationMinutes": 45,
+        "description": "Lavagem rápida externa para remoção de sujeira leve.",
+        "tamanhos": {
+          "pequeno": { "preco_min": 30.00, "preco_max": 30.00, "ativo": 1 },
+          "medio": { "preco_min": 40.00, "preco_max": 40.00, "ativo": 1 },
+          "grande_suv_utilitario": { "preco_min": 50.00, "preco_max": 50.00, "ativo": 1 },
+          "picape_van": { "preco_min": 50.00, "preco_max": 50.00, "ativo": 0 }
+        }
+      },
+      {
+        "id": 2,
+        "categoria_menu": "LAVAGENS",
+        "servico": "Ducha — com caixa de rodas",
+        "ativo": 1,
+        "observacao": "",
+        "durationMinutes": 60,
+        "description": "Lavagem externa com atenção especial à caixa de rodas.",
+        "tamanhos": {
+          "pequeno": { "preco_min": 45.00, "preco_max": 45.00, "ativo": 1 },
+          "medio": { "preco_min": 55.00, "preco_max": 55.00, "ativo": 1 },
+          "grande_suv_utilitario": { "preco_min": 65.00, "preco_max": 65.00, "ativo": 1 },
+          "picape_van": { "preco_min": 65.00, "preco_max": 65.00, "ativo": 0 }
+        }
+      },
+      {
+        "id": 3,
+        "categoria_menu": "LAVAGENS",
+        "servico": "Lavagem Completa Premium",
+        "ativo": 1,
+        "observacao": "",
+        "durationMinutes": 90,
+        "description": "Lavagem profunda com acabamento premium e proteção rápida.",
+        "tamanhos": {
+          "pequeno": { "preco_min": 70.00, "preco_max": 70.00, "ativo": 1 },
+          "medio": { "preco_min": 80.00, "preco_max": 80.00, "ativo": 1 },
+          "grande_suv_utilitario": { "preco_min": 90.00, "preco_max": 90.00, "ativo": 1 },
+          "picape_van": { "preco_min": 100.00, "preco_max": 100.00, "ativo": 1 }
+        }
+      },
+      {
+        "id": 4,
+        "categoria_menu": "LAVAGENS",
+        "servico": "Lavagem Técnica / Detalhada Premium",
+        "ativo": 1,
+        "observacao": "",
+        "durationMinutes": 150,
+        "description": "Atenção máxima aos detalhes, frestas, remoção de insetos e piche.",
+        "tamanhos": {
+          "pequeno": { "preco_min": 110.00, "preco_max": 110.00, "ativo": 1 },
+          "medio": { "preco_min": 125.00, "preco_max": 125.00, "ativo": 1 },
+          "grande_suv_utilitario": { "preco_min": 140.00, "preco_max": 140.00, "ativo": 1 },
+          "picape_van": { "preco_min": 160.00, "preco_max": 160.00, "ativo": 1 }
+        }
+      },
+      {
+        "id": 5,
+        "categoria_menu": "SERVIÇOS ESPECÍFICOS",
+        "servico": "Higienização Interna",
+        "ativo": 1,
+        "observacao": "Preço de faixa estimado. O valor final varia de acordo com o tamanho e estado de conservação do veículo.",
+        "durationMinutes": 240,
+        "description": "Limpeza profunda de bancos, teto, carpetes e painel.",
+        "tamanhos": {
+          "pequeno": { "preco_min": 250.00, "preco_max": 400.00, "ativo": 1 },
+          "medio": { "preco_min": 250.00, "preco_max": 400.00, "ativo": 1 },
+          "grande_suv_utilitario": { "preco_min": 250.00, "preco_max": 400.00, "ativo": 1 },
+          "picape_van": { "preco_min": 250.00, "preco_max": 400.00, "ativo": 1 }
+        }
+      },
+      {
+        "id": 6,
+        "categoria_menu": "PROTEÇÃO E TRATAMENTOS",
+        "servico": "Vitrificação de Pintura",
+        "ativo": 1,
+        "observacao": "",
+        "durationMinutes": 960,
+        "description": "Proteção extrema e brilho profundo para a pintura do seu carro.",
+        "tamanhos": {
+          "pequeno": { "preco_min": 800.00, "preco_max": 800.00, "ativo": 1 },
+          "medio": { "preco_min": 1100.00, "preco_max": 1100.00, "ativo": 1 },
+          "grande_suv_utilitario": { "preco_min": 1300.00, "preco_max": 1300.00, "ativo": 1 },
+          "picape_van": { "preco_min": 1300.00, "preco_max": 1300.00, "ativo": 1 }
+        }
+      },
+      {
+        "id": 7,
+        "categoria_menu": "ESTÉTICA E POLIMENTO",
+        "servico": "Polimento Comercial",
+        "ativo": 1,
+        "observacao": "",
+        "durationMinutes": 360,
+        "description": "Remoção de riscos leves e revitalização do verniz.",
+        "tamanhos": {
+          "pequeno": { "preco_min": 300.00, "preco_max": 350.00, "ativo": 1 },
+          "medio": { "preco_min": 300.00, "preco_max": 350.00, "ativo": 1 },
+          "grande_suv_utilitario": { "preco_min": 400.00, "preco_max": 450.00, "ativo": 1 },
+          "picape_van": { "preco_min": 400.00, "preco_max": 450.00, "ativo": 1 }
+        }
+      }
+    ]
+  };
+}
 
 // ─────────────────────────────────────────────
 // BOOT
