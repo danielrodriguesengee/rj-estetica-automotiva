@@ -4,6 +4,7 @@
 
 const { getCalendarClient, ok, err, CORS_HEADERS } = require('./_gcal');
 const { normalizePhone } = require('./_phone');
+const { sendTelegramMessage } = require('./_telegram');
 
 const TZ = 'America/Sao_Paulo';
 
@@ -65,12 +66,33 @@ exports.handler = async (event) => {
 
     await calendar.events.delete({ calendarId, eventId: match.id });
 
-    // Notifica o dono — AWAIT obrigatório em serverless
+    // Notifica o dono — AWAIT obrigatório em serverless (WhatsApp)
     try {
       await notifyCancel({ name, normalizedPhone, evSummary, evStart });
       console.log('[CallMeBot] Notificação de cancelamento enviada.');
     } catch (waErr) {
       console.error('[CallMeBot] Falha no cancelamento:', waErr.message);
+    }
+
+    // Notifica o dono — AWAIT obrigatório em serverless (Telegram)
+    try {
+      const chatId = process.env.TELEGRAM_CHAT_ID;
+      
+      // Sanitiza caracteres que possam quebrar a formatação do Markdown clássico
+      const cleanSummary = evSummary.replace(/[_*`\[]/g, '');
+      
+      const text =
+        `❌ *AGENDAMENTO CANCELADO*\n\n` +
+        `👤 *Cliente:* ${name}\n` +
+        `📞 *WhatsApp:* ${normalizedPhone}\n` +
+        `📋 *Serviço:* ${cleanSummary}\n` +
+        `📅 *Era:* ${evStart}\n\n` +
+        `RJ Estética Automotiva`;
+
+      await sendTelegramMessage(chatId, text);
+      console.log('[Telegram] Notificação de cancelamento enviada.');
+    } catch (tgErr) {
+      console.error('[Telegram] Falha ao notificar cancelamento:', tgErr.message);
     }
 
     return ok({ success: true, message: `Agendamento "${evSummary}" cancelado com sucesso.` });
@@ -94,7 +116,7 @@ async function notifyCancel({ name, normalizedPhone, evSummary, evStart }) {
     `📅 Era: ${evStart}\n\n` +
     `RJ Estética Automotiva`;
 
-  const url = `https://api.callmebot.com/whatsapp.php?phone=${ownerPhone}&text=${encodeURIComponent(text)}&apikey=${apikey}`;
+  const url = `https://callmebot.com{ownerPhone}&text=${encodeURIComponent(text)}&apikey=${apikey}`;
   console.log('[CallMeBot] Notificando cancelamento para:', ownerPhone);
 
   const res  = await fetch(url);
