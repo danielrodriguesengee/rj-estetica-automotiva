@@ -3,6 +3,7 @@
 
 const { getCalendarClient, ok, err, CORS_HEADERS } = require('./_gcal');
 const { normalizePhone, waLink } = require('./_phone');
+const { sendTelegramMessage } = require('./_telegram');
 
 const TZ = 'America/Sao_Paulo';
 
@@ -71,12 +72,31 @@ exports.handler = async (event) => {
     const response = await calendar.events.insert({ calendarId, resource: calEvent });
     const created  = response.data;
 
-    // AWAIT obrigatório em serverless
+    // AWAIT obrigatório em serverless (WhatsApp)
     try {
       await notifyOwner({ name, vehicle, vtype, clientPhone, clientWaLink, date: dateStr, time, service, extras, total, fmtPrice });
       console.log('[CallMeBot] Notificação enviada.');
     } catch (waErr) {
       console.error('[CallMeBot] Falha:', waErr.message);
+    }
+
+    // AWAIT obrigatório em serverless (Telegram)
+    try {
+      const chatId = process.env.TELEGRAM_CHAT_ID;
+      const text =
+        `🚗 *NOVO AGENDAMENTO*\n\n` +
+        `👤 Cliente: ${name}\n` +
+        `📞 WhatsApp: ${clientPhone}\n` +
+        `🚘 Veículo: ${vehicle} (${vtype})\n` +
+        `🔧 Serviço: ${service.name}${extrasStr}\n` +
+        `📅 Data: ${dateStr} às ${time}\n` +
+        `💰 Total: R$ ${fmtPrice(total)}\n\n\n` +
+        `💬 Falar com cliente: ${clientWaLink}\n\n` +
+        `RJ Estética Automotiva`;
+
+      await sendTelegramMessage(chatId, text);
+    } catch (tgErr) {
+      console.error('[Telegram] Falha ao notificar:', tgErr.message);
     }
 
     return ok({ success: true, eventId: created.id, htmlLink: created.htmlLink, message: 'Agendamento criado com sucesso!' });
