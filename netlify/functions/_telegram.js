@@ -1,40 +1,58 @@
 // netlify/functions/_telegram.js
+const https = require('https');
 
 async function sendTelegramMessage(chatId, text) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   if (!token || !chatId) {
-    console.error('[Telegram] ERRO: Token ou Chat ID ausente no ambiente.', { token: !!token, chatId: !!chatId });
+    console.error('[Telegram] ERRO: Token ou Chat ID ausente no ambiente.');
     return;
   }
 
-  const url = `https://telegram.org{token}/sendMessage`;
+  const payload = JSON.stringify({
+    chat_id: chatId,
+    text: text,
+    parse_mode: 'Markdown'
+  });
 
-  console.log(`[Telegram] Tentando enviar para o ID: ${chatId}`);
+  const options = {
+    hostname: 'api.telegram.org',
+    port: 443,
+    path: `/bot${token}/sendMessage`,
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Content-Length': Buffer.byteLength(payload)
+    }
+  };
 
-  try {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: text,
-        parse_mode: 'Markdown'
-      })
+  return new Promise((resolve, reject) => {
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', (chunk) => data += chunk);
+      res.on('end', () => {
+        try {
+          const resp = JSON.parse(data);
+          console.log('[Telegram] Resposta completa da API:', JSON.stringify(resp));
+          if (!resp.ok) {
+            reject(new Error(resp.description || 'Erro desconhecido'));
+          } else {
+            console.log('[Telegram] Mensagem enviada com sucesso.');
+            resolve(resp);
+          }
+        } catch (e) {
+          reject(new Error('Falha ao parsear resposta do Telegram'));
+        }
+      });
     });
 
-    const resp = await res.json();
-    console.log('[Telegram] Resposta completa da API:', JSON.stringify(resp));
+    req.on('error', (err) => {
+      console.error('[Telegram] Erro crítico na requisição:', err.message);
+      reject(err);
+    });
 
-    if (!resp.ok) {
-      throw new Error(resp.description || 'Erro desconhecido');
-    }
-
-    console.log('[Telegram] Mensagem enviada com sucesso.');
-    return resp;
-  } catch (err) {
-    console.error('[Telegram] Erro crítico na requisição:', err.message);
-    throw err;
-  }
+    req.write(payload);
+    req.end();
+  });
 }
 
 module.exports = { sendTelegramMessage };
